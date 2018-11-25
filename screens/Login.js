@@ -15,11 +15,13 @@ import {Button} from "react-native-paper";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import {firebaseApp} from "../api/firebase";
 import * as firebase from "firebase";
+import {db} from '../api/firebase';
 import {
   FormLabel,
   FormInput,
   FormValidationMessage
 } from "react-native-elements";
+import Details from "./Details";
 
 const myProps = Platform.select({
   android: {
@@ -34,7 +36,7 @@ const myProps = Platform.select({
 export default class Login extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { email: "", password: "", error: "", loading: false };
+    this.state = { email: "", password: "",username:" ", error: "", loading: false };
   }
  
 
@@ -58,7 +60,7 @@ export default class Login extends React.Component {
   onSignUpPress() {
     this.setState({ error: "", loading: true });
 
-    const { email, password } = this.state;
+    const { email, password,username} = this.state;
     firebase
       .auth()
       .createUserWithEmailAndPassword(email, password)
@@ -69,6 +71,13 @@ export default class Login extends React.Component {
       .catch(() => {
         this.setState({ error: "fghjk", loading: false });
       });
+      const user = firebase.auth().currentUser;
+      const usersRef = db.ref('users');
+      const userRef = usersRef.child(user.uid);
+      userRef.set({
+        username:username,
+      });
+      
   }
 
   renderButtonOrLoading() {
@@ -86,7 +95,9 @@ export default class Login extends React.Component {
 
   render() {
     return (
+      
       <View style={styles.container}>
+      
         <Image
         style={{
           height:150,
@@ -113,14 +124,21 @@ export default class Login extends React.Component {
               onChangeText={password => this.setState({ password })}
               placeholder="Password"
             />
+
+            <TextInput
+              style={styles.input}
+              onChangeText={username => this.setState({ username })}
+              placeholder="Name and Surnanme"
+            />
           </View>
           </KeyboardAwareScrollView>
           
 
         {this.renderButtonOrLoading()}
         
-      
+        
       </View>
+      
     );
   }
 }
