@@ -1,15 +1,74 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image, TouchableHighlight, Modal, Alert } from 'react-native';
+  
+import { StyleSheet, Text, View, Image, TouchableHighlight, Modal, Alert,FlatList,ListView,TouchableOpacity,Platform } from 'react-native';
+import {db} from '../api/firebase';
+import * as firebase from "firebase";
+import { Card } from "react-native-elements";
 
-
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+const myProps = Platform.select({
+  android: {
+    extraScrollHeight: 50,
+    enableOnAndroid: true,
+    keyboardShouldPersistTaps: "handled"
+  },
+  ios: {}
+});
 
 export default class Details extends React.Component {
+  static navigationOptions = ({ navigation }) => {
+    return {
+      title: navigation.getParam('bookObject',  {title: "undefined"}).title,
+    };
+};
   constructor(props) {
     super(props);
     this.state = {
       modalVisible: false,
+      bookName: "Undefined",
+      bookDescription: "No description availible.",
+      bookUri: "https://islandpress.org/sites/default/files/400px%20x%20600px-r01BookNotPictured.jpg",
+      bookAuthor: "Unknown",
+      username:'',
+      owners:new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      })
     };
   }
+  componentDidMount(){
+
+    const usersRef = db.ref('users');
+    const user = firebase.auth().currentUser;
+    const userRef=usersRef.child(user.uid);
+    userRef.on('value', (snap) => {      
+      snap.forEach((child) => {      
+        this.setState({
+          username: child.val(),
+        });
+    
+        
+      });
+    })
+    const title = this.props.navigation.getParam('bookObject', {}).title;
+    const ownersRef = db.ref('books');
+    const ownerRef=ownersRef.child(title);
+    ownerRef.on('value', (snap) => {  
+      var items = [];
+      snap.forEach((child) => {
+        
+        items.push({
+          name: child.val().owner,
+          _key: child.key
+        });
+      });
+
+      this.setState({
+        owners: this.state.owners.cloneWithRows(items)
+      });
+
+    })
+  }
+
 
   setModalVisible(visible) {
     this.setState({ modalVisible: visible });
@@ -73,51 +132,46 @@ export default class Details extends React.Component {
         </View>
 
       </View>
-
-
-
-
     </Modal>
-       
+
+
+       <KeyboardAwareScrollView {...myProps}>  
         <Image
           style={{
-            height: 150,
+            height: 200,
             width: 350,
           }}
-          source={require('../assets/oceansbook.jpg')}
+          source={{uri: this.props.navigation.getParam('bookObject', {}).uri}}
         />
-        <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>The light between oceans</Text>
+        <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>{this.props.navigation.getParam('bookObject', {}).title}</Text>
 
         <View style={{ flexDirection: "row", alignItems: 'center', width: 300, marginTop: 20 }}>
           <Text style={{
             fontSize: 12,
             color: "#DADADA", textAlign: "left"
           }}>Plot: </Text>
-          <Text style={{ fontSize: 12, }}>Tom Sherbourne, a traumatised and withdrawn hero of World War I, is hired as a lightkeeper at Janus Rock, a lighthouse off the
-        coast of Western Australia. He falls in love with
-        a local girl, Isabel Graysmark, and they marry in
-        1921. Isabel loses two pregnancies in three
-       years and fears she may never become a mother
+          <Text style={{ fontSize: 12, }}>{this.props.navigation.getParam('bookObject', {}).description}
 .</Text>
         </View>
+        
         <View style={{ flexDirection: "row", alignItems: 'center', width: 320, marginTop: 20 }}>
           <Text style={{
             fontSize: 12,
             color: "#DADADA", textAlign: "left"
           }}>Owners: </Text>
-          <TouchableHighlight
-            onPress={() => {
-              this.setModalVisible(true);
-            }}>
-            <Text style={{ fontSize: 12, }}> Abu Zidan,</Text>
-          </TouchableHighlight>
-          <TouchableHighlight
-            onPress={() => {
-              this.setModalVisible(true);
-            }}>
-            <Text style={{ fontSize: 12, }}> Nuraly Akmaral</Text>
-          </TouchableHighlight>
+       
+       <ListView
+          dataSource={this.state.owners}
+          renderRow={this._renderItem.bind(this)}
+          enableEmptySections={true}
+       
+       
+      />
+          
+          
         </View>
+        
+        
 
         <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: "center", width: 320, marginTop: 70, }}>
           <Image
@@ -129,12 +183,31 @@ export default class Details extends React.Component {
           />
           <TouchableHighlight
             onPress={() => {
+              this.saveOwnerToBook();
               this.props.navigation.navigate("collection");
             }}>
             <Text style={{ fontSize: 12, }}> Add to my collection
   </Text>
           </TouchableHighlight>
         </View>
+        <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: "center", width: 320, marginTop: 10, }}>
+          <Image
+            style={{
+              height: 50,
+              width: 50,
+            }}
+            source={require('../assets/back.png')}
+          />
+          <TouchableHighlight
+            onPress={() => {
+              
+              this.props.navigation.navigate("main");
+            }}>
+            <Text style={{ fontSize: 12, }}> Back to menu!
+  </Text>
+          </TouchableHighlight>
+        </View>
+        </KeyboardAwareScrollView>
 
         
       </View>
@@ -142,6 +215,45 @@ export default class Details extends React.Component {
 
     );
   }
+ 
+
+  saveOwnerToBook() {
+    const books='books';
+    const booksRef = db.ref('books');
+    const bookTitle=this.props.navigation.getParam('bookObject', {}).title;
+    const bookRef = booksRef.child(bookTitle);
+    bookRef.push({
+      owner:this.state.username,
+    });
+    const user = firebase.auth().currentUser;
+      const usersRef = db.ref('users');
+      const userRef = usersRef.child(user.uid);
+      const userBookRef = userRef.child(books);
+      userBookRef.push({
+        bookname:bookTitle,
+      });
+    
+  }
+  _renderItem(item) {    
+
+    return (
+      <TouchableOpacity 
+        onPress={()=>{
+         
+              this.setModalVisible(true);
+
+            }}>
+           
+              <Text style={{ marginBottom: 10 }}>
+                {item.name}
+              </Text>
+           
+            </TouchableOpacity>
+          );
+        };
+     
+     
+ 
 }
 
 const styles = StyleSheet.create({
