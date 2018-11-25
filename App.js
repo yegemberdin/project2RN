@@ -6,7 +6,7 @@ import {Login,Home,Details,MyBooks,SendMessage,Messages}from './screens/index'
 
 const Tabs = createBottomTabNavigator({  
   home:Home,
-  details:Details,  
+ 
   collection:MyBooks,
   messages:Messages,
   
@@ -34,14 +34,15 @@ const Tabs = createBottomTabNavigator({
 
 const MainStack = createSwitchNavigator({
   intro: Login,
-  main: Tabs
+  main: Tabs,
+  details:Details,  
 
 
 })
 export default class App extends React.Component {  
   render() {
         
-    return  <MainStack/>;
+    return  <MainStack/ >;
       
     
   }

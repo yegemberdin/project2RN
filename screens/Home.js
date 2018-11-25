@@ -27,7 +27,6 @@ const data = [
     title: "something four"
   },
  
-];
 
 export default class Home extends React.Component {
   constructor(props) {
