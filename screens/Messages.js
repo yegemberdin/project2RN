@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image, TouchableHighlight, Modal, Alert } from 'react-native';
-
+import { StyleSheet, Text, View, Image, TouchableHighlight, Modal, Alert,ListView } from 'react-native';
+import {db} from '../api/firebase';
+import * as firebase from "firebase";
 
 
 export default class Messages extends React.Component {
@@ -8,40 +9,148 @@ export default class Messages extends React.Component {
     super(props);
     this.state = {
       modalVisible: false,
+      messages:new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
+      username:'',
     };
   }
+  componentDidMount(){
+   
 
+    const usersRef = db.ref('users');
+    const user = firebase.auth().currentUser;
+    const userRef=usersRef.child(user.uid);
+    userRef.on('value', (snap) => {      
+      snap.forEach((child) => {      
+        this.setState({
+          username: child.val(),
+
+        });
+    
+        
+      });
+    })
+    
+    const userr=this.state.username;
+        const msgsRef = db.ref('messages');
+    const userMsgRef=msgsRef.child('Mila Sadvakassova');
+    userMsgRef.on('value', (snap) => {  
+      var items = [];
+      snap.forEach((child) => {
+        
+        items.push({
+          book: child.val().book,
+          date: child.val().date,
+          message: child.val().message,
+          phone: child.val().phone,
+          sender: child.val().sender,
+          _key: child.key
+        });
+      });
+
+      this.setState({
+        messages: this.state.messages.cloneWithRows(items)
+      });
+
+    })
+  }
   setModalVisible(visible) {
     this.setState({ modalVisible: visible });
   }
   render() {
     return (
-      <View style={styles.container}>
-       <Modal
+      <View style={styles.container}>     
+         
+ <ListView
+ dataSource={this.state.messages}
+ renderRow={this._renderMsgsList.bind(this)}
+ enableEmptySections={true}/>
+
+  </View>
+    
+    );
+  }
+  _renderMsgsList(item) {    
+
+    return (
+      
+      <View>     
+           <Text style={{ fontSize: 22, fontWeight: "bold", marginTop: 30,color:"#0B3A37" }}>Incoming messages...</Text>
+<Text style={{marginTop:30, color:"#979797"}}>{item.sender}</Text>
+<View style={{ flexDirection: "row", alignItems: 'center', width: 330, marginTop: 10 }}>
+<Text style={{
+    fontSize: 13, 
+  }}>B o o k:  {item.book} </Text>
+  <TouchableHighlight
+      onPress={() => { this.setModalVisible(true); this.renderMsgModal(item); }}>
+  <Image
+    style={{
+      height: 20,
+      width: 30,
+    }}
+    source={require('../assets/openmsg.png')}
+  />
+  </TouchableHighlight>
+  <TouchableHighlight
+      onPress={() => {Alert.alert('Message has been accepted'); }}>
+  <Image
+    style={{
+      height: 20,
+      width: 25,
+    }}
+    source={require('../assets/green.png')}
+  />
+  </TouchableHighlight>
+  <TouchableHighlight
+      onPress={() => {Alert.alert('Message has been declined'); }}>
+  <Image
+    style={{
+      height: 20,
+      width: 25,
+    }}
+    source={require('../assets/red.png')}
+  />
+  </TouchableHighlight>
+
+  
+
+
+</View>
+           
+           </View>
+          );
+        };
+  renderMsgModal(item) {  
+     
+console.log('aa');
+          return (
+            <View>
+
+               <Modal
       animationType="slide"
       transparent={false}
-      visible={this.state.modalVisible}
-      onRequestClose={() => {
+      visible={true}
+            onRequestClose={() => {
         Alert.alert('Modal has been closed.');
+        this.setModalVisible(false);
       }}>
       <View style={styles.container}>
-        <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>Message from Nuray Maratova!</Text>
+        <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>Message from {item.sender}!</Text>
 
         <View style={{ flexDirection: "row", alignItems: 'center', width: 300, marginTop: 20 }}>
           <Text style={{
             fontSize: 12,
             color: "#DADADA", textAlign: "left"
           }}>message: </Text>
-          <Text style={{ fontSize: 12, }}>Hi! Abu. I want you to share with me book The light betwwen oceans! I have a books like:
-          harry potter,game of thrones, stars with us!
-          Books are ideal! </Text>
+          <Text style={{ fontSize: 12, }}>{item.message} </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: 'center', width: 320, marginTop: 20 }}>
           <Text style={{
             fontSize: 12,
             color: "#DADADA", textAlign: "left"
           }}>Date: </Text>
-          <Text style={{ fontSize: 12, }}> March ,20. 2018  Park of the President, Almaty </Text>
+          <Text style={{ fontSize: 12, }}> {item.date} </Text>
 
         </View>
 
@@ -51,7 +160,7 @@ export default class Messages extends React.Component {
             color: "#DADADA", textAlign: "left"
           }}>Phone: </Text>
 
-          <Text style={{ fontSize: 12, }}> 8700-700-00-00</Text>
+          <Text style={{ fontSize: 12, }}> {item.phone}</Text>
 
         </View>
         <View style={{ flexDirection: "row", alignItems: 'center',justifyContent:"center", width: 320, marginTop: 20 }}>
@@ -100,93 +209,10 @@ export default class Messages extends React.Component {
 
 
     </Modal>
-         <Text style={{ fontSize: 22, fontWeight: "bold", marginTop: 30,color:"#0B3A37" }}>Incoming messages...</Text>
-<Text style={{marginTop:30, color:"#979797"}}>Nazerke Yegemberdi: </Text>
-<View style={{ flexDirection: "row", alignItems: 'center', width: 330, marginTop: 10 }}>
-<Text style={{
-    fontSize: 13, 
-  }}>B o o k:  The light between oceans </Text>
-  <TouchableHighlight
-      onPress={() => {this.setModalVisible(true);}}>
-  <Image
-    style={{
-      height: 20,
-      width: 30,
-    }}
-    source={require('../assets/openmsg.png')}
-  />
-  </TouchableHighlight>
-  <TouchableHighlight
-      onPress={() => {Alert.alert('Message has been accepted'); }}>
-  <Image
-    style={{
-      height: 20,
-      width: 25,
-    }}
-    source={require('../assets/green.png')}
-  />
-  </TouchableHighlight>
-  <TouchableHighlight
-      onPress={() => {Alert.alert('Message has been declined'); }}>
-  <Image
-    style={{
-      height: 20,
-      width: 25,
-    }}
-    source={require('../assets/red.png')}
-  />
-  </TouchableHighlight>
+              </View>
 
-  
-
-
-</View>
-<Text style={{marginTop:30, color:"#979797"}}>Nuray Maratova: </Text>
-<View style={{ flexDirection: "row", alignItems: 'center', width: 330, marginTop: 10 }}>
-<Text style={{
-    fontSize: 13, 
-  }}>B o o k:  Harry potter and the goblet of fire </Text>
-  <TouchableHighlight
-      onPress={() => {this.setModalVisible(true);}}>
-  <Image
-    style={{
-      height: 20,
-      width: 20,
-    }}
-    source={require('../assets/openmsg.png')}
-  />
-  </TouchableHighlight>
-  <TouchableHighlight
-      onPress={() => {Alert.alert('Message has been accepted'); }}>
-  <Image
-    style={{
-      height: 20,
-      width: 25,
-    }}
-    source={require('../assets/green.png')}
-  />
-  </TouchableHighlight>
-  <TouchableHighlight
-      onPress={() => {Alert.alert('Message has been declined'); }}>
-  <Image
-    style={{
-      height: 20,
-      width: 25,
-    }}
-    source={require('../assets/red.png')}
-  />
-  </TouchableHighlight>
-
-  
-
-
-</View>
-
-
-  </View>
-    
-    );
-  }
+          );
+        };
 }
 
 const styles = StyleSheet.create({
