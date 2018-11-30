@@ -1,6 +1,6 @@
 import React from 'react';
   
-import { StyleSheet, Text, View, Image, TouchableHighlight, Modal, Alert,FlatList,ListView,TouchableOpacity,Platform } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableHighlight, Modal, Alert,FlatList,ListView,TouchableOpacity,Platform,TextInput} from 'react-native';
 import {db} from '../api/firebase';
 import * as firebase from "firebase";
 import { Card } from "react-native-elements";
@@ -30,6 +30,10 @@ export default class Details extends React.Component {
       bookUri: "https://islandpress.org/sites/default/files/400px%20x%20600px-r01BookNotPictured.jpg",
       bookAuthor: "Unknown",
       username:'',
+      receiver:'',
+      message:'',
+      date:'',
+      phone:'',
       owners:new ListView.DataSource({
         rowHasChanged: (row1, row2) => row1 !== row2,
       })
@@ -84,26 +88,30 @@ export default class Details extends React.Component {
       visible={this.state.modalVisible}
       onRequestClose={() => {
         Alert.alert('Modal has been closed.');
+        this.setModalVisible(false);
       }}>
       <View style={styles.container}>
-        <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>Write message to Abu Zidan!</Text>
+        <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 20 }}>Write message to {this.state.receiver}</Text>
 
         <View style={{ flexDirection: "row", alignItems: 'center', width: 300, marginTop: 20 }}>
           <Text style={{
             fontSize: 12,
             color: "#DADADA", textAlign: "left"
           }}>message: </Text>
-          <Text style={{ fontSize: 12, }}>Hi! Abu. I want you to share with me book The light betwwen oceans! I have a books like:
-          harry potter,game of thrones, stars with us!
-          Books are ideal! </Text>
+          <TextInput style={styles.input}
+          onChangeText={message => this.setState({ message })}
+          >
+          </TextInput>
         </View>
         <View style={{ flexDirection: "row", alignItems: 'center', width: 320, marginTop: 20 }}>
           <Text style={{
             fontSize: 12,
             color: "#DADADA", textAlign: "left"
           }}>Date: </Text>
-          <Text style={{ fontSize: 12, }}> March ,20. 2018  Park of the President, Almaty </Text>
-
+          <TextInput style={styles.input}
+          onChangeText={date => this.setState({ date })}
+          >
+           </TextInput>
         </View>
 
         <View style={{ flexDirection: "row", alignItems: 'center', width: 320, marginTop: 20 }}>
@@ -112,8 +120,10 @@ export default class Details extends React.Component {
             color: "#DADADA", textAlign: "left"
           }}>Phone: </Text>
 
-          <Text style={{ fontSize: 12, }}> 8700-700-00-00</Text>
-
+          <TextInput style={styles.input}
+           onChangeText={phone => this.setState({ phone })}
+          >
+           </TextInput>
         </View>
         <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: "center", width: 320, marginTop: 70, }}>
           <Image
@@ -125,7 +135,9 @@ export default class Details extends React.Component {
           />
           <TouchableHighlight
             onPress={() => {
+              this.saveMessage();
               this.setModalVisible(!this.state.modalVisible);
+
             }}>
             <Text style={{ fontSize: 12, }}> Send message!</Text>
           </TouchableHighlight>
@@ -234,13 +246,34 @@ export default class Details extends React.Component {
       });
     
   }
+
+  saveMessage(){
+    const msgsRef=db.ref('messages');
+    const bookTitle=this.props.navigation.getParam('bookObject', {}).title;
+    const receiverRef=msgsRef.child(this.state.receiver);
+    receiverRef.push({
+      date:this.state.date,
+      message:this.state.message,
+      phone:this.state.phone,
+      book:bookTitle,
+      sender:this.state.username,
+
+
+    })
+
+
+  }
   _renderItem(item) {    
 
     return (
       <TouchableOpacity 
         onPress={()=>{
-         
+              this.setState({
+                receiver:item.name,                
+
+              } ) ;      
               this.setModalVisible(true);
+
 
             }}>
            
@@ -261,5 +294,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     alignItems: "center",
+  },
+  input: {
+    height: 40,
+    fontSize: 12,
+    borderWidth: 0.5,
+    color: "#3a3a3a",
+    fontWeight: "200",
+    alignSelf: "flex-end",
+
+    width: 250
   },
 });
